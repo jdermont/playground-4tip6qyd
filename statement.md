@@ -35,6 +35,8 @@ Map<State,List<Action>> storedStates;
 while (true) {
     List<State> gameStates;
     List<Action> actions;
+    Game game;
+    // ...
     
     while(!game.isOver()) {
         State state = game.getState();
@@ -64,7 +66,7 @@ while (true) {
 
 ## Yavalath symmetries
 
-Yavalath is player on hexagonal board, and luckily, hexagon has more symmetries than square. Hexagon has 6 symmetries and 6 rotations, so in average a state has 12 equivalent variations. 
+Yavalath is player on hexagonal board, and luckily, hexagon has more symmetries than square. Hexagon has 6 symmetries and 6 rotations, so in average a state has 12 equivalent variations. We can exploit this fact in few ways. Firstly, naively speaking Yavalath has 61 starting moves, but thanks to symmetry deduplication, there are only 9 distinct moves.
 
 This Java template lets you get started quickly with a simple one-page playground.
 
