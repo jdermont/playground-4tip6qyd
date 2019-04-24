@@ -16,11 +16,55 @@ Opening books can be hardcoded by humans or generated automatically. Obviously I
 
 > To solve the opening problems of his chess machine, Belle, Ken Thompson typed in opening lines from the Encyclopedia of Chess Openings (in five thick volumes). Religiously, he dedicated one hour a day for almost three years (!) to the tedious pursuit of entering lines of play from the books and having his Belle computer verify them. The result was an opening library of roughly three-hundred thousand moves. The results were immediate and obvious: Belle became a much stronger chess program, and Ken probably aged prematurely. Later Ken developed a program to automatically read the Encyclopedia, allowing him to do in a few days what had taken him three years to do manually.
 
-For minimax, there is i.e. Drop-Out-Expansion. Since my bot utilizes MCTS, I will use methods provided in paper "Meta Monte-Carlo Tree Search for Automatic Opening Book Generation (2009)". Meta-MCTS is just fancy name, in essence it is doing CPU vs CPU games, with addition of saving game states and results and gathering statistics. And re-using moves that had >50% (or other threshold) winrate. But before doing that, let's take a closer look on Yavalath construction.
+For minimax, there is i.e. Drop-Out-Expansion. Since my bot utilizes MCTS, I will use methods provided in paper "Meta Monte-Carlo Tree Search for Automatic Opening Book Generation (2009)". Meta-MCTS in this case is just fancy name, in essence it is doing CPU vs CPU games, with addition of saving game states and results and gathering statistics. And re-using moves that had >50% (or other threshold) winrate. In short, we have State S and respective reply Action A to it.
+
+```
+class Action {
+    Move move;
+    int wins;
+    int games;
+    
+    float winrate() {
+        return (float)wins / games;
+    }
+}
+
+Map<State,List<Action>> storedStates;
+// ...
+
+while (true) {
+    List<State> gameStates;
+    List<Action> actions;
+    
+    while(!game.isOver()) {
+        State state = game.getState();
+        Action bestAction = null;
+        if (storedStates.containsKey(state)) {
+            if (Action action : storedStates.get(state)) {
+                if (bestAction == null || action.winrate() > bestAction.winrate()) {
+                    bestAction = action;
+                }
+            }
+        }
+        gameStates.add(state);
+        if (bestAction != null && bestAction.winrate() > 0.5) {
+            game.makeMove(action);
+            actions.add(action);
+        } else {
+            Action action = cpu.getBestMove();
+            game.makeMove(action);
+            actions.add(action);
+        }
+    }
+    
+    // add game states and add or update their actions to the map
+    // and update their wins and games accordingly
+}
+```
 
 ## Yavalath symmetries
 
-Yavalath is player on hexagon board, and luckily, hexagon has more symmetries than square.
+Yavalath is player on hexagonal board, and luckily, hexagon has more symmetries than square. Hexagon has 6 symmetries and 6 rotations, so in average a state has 12 equivalent variations. 
 
 This Java template lets you get started quickly with a simple one-page playground.
 
