@@ -16,7 +16,7 @@ Opening books can be hardcoded by humans or generated automatically. Obviously I
 
 > To solve the opening problems of his chess machine, Belle, Ken Thompson typed in opening lines from the Encyclopedia of Chess Openings (in five thick volumes). Religiously, he dedicated one hour a day for almost three years (!) to the tedious pursuit of entering lines of play from the books and having his Belle computer verify them. The result was an opening library of roughly three-hundred thousand moves. The results were immediate and obvious: Belle became a much stronger chess program, and Ken probably aged prematurely. Later Ken developed a program to automatically read the Encyclopedia, allowing him to do in a few days what had taken him three years to do manually.
 
-For minimax, there is i.e. Drop-Out-Expansion. Since my bot utilizes MCTS, I will use methods provided in paper "Meta Monte-Carlo Tree Search for Automatic Opening Book Generation (2009)". Meta-MCTS in this case is just fancy name, in essence it is doing CPU vs CPU games, with addition of saving game states and results and gathering statistics. And re-using moves that had >50% (or other threshold) winrate. In short, we have State S and respective reply Action A to it.
+For minimax, there is i.e. Drop-Out-Expansion. Since my bot utilizes MCTS, I will use methods provided in paper "Meta Monte-Carlo Tree Search for Automatic Opening Book Generation (2009)". Meta-MCTS in this case is just fancy name, in essence it is doing CPU vs CPU games, with addition of saving game states and results and gathering statistics. And re-using moves that had >50% (or other threshold) winrate. In short, we have State S and respective reply Action A to it. Having a state S i.e. in a form of "First Player's stones|Second Player's stones" automatically deals with transpositions (the same situation in game reachable from different order of moves), because we don't care about the order of moves.
 
 ```
 class Action {
@@ -34,7 +34,7 @@ Map<State,List<Action>> storedStates;
 
 while (true) {
     List<State> gameStates;
-    List<Action> actions;
+    List<Action> replies;
     Game game;
     // ...
     
@@ -51,22 +51,51 @@ while (true) {
         gameStates.add(state);
         if (bestAction != null && bestAction.winrate() > 0.5) {
             game.makeMove(action.move);
-            actions.add(action);
+            replies.add(action);
         } else {
             Action action = cpu.getBestMove();
             game.makeMove(action.move);
-            actions.add(action);
+            replies.add(action);
         }
     }
     
-    // add game states and add or update their actions to the map
-    // and update their wins and games accordingly
+    for (int i=0;i<gameStates.size();i++) {
+        State state = gameStates.get(i);
+        Action action = replies.get(i);
+        // add game state and add or update its action to the map
+        // and update action's wins and games accordingly
+    }
 }
 ```
 
 ## Yavalath symmetries
 
-Yavalath is player on hexagonal board, and luckily, hexagon has more symmetries than square. Hexagon has 6 symmetries and 6 rotations, so in average a state has 12 equivalent variations. We can exploit this fact in few ways. Firstly, naively speaking Yavalath has 61 starting moves, but thanks to symmetry deduplication, there are only 9 distinct moves. And for the few first moves, much deduplication will occur so we're gonna need to explore much less distinct moves for our opening book. Secondly, we can support averagily 12 variations if we save 1 state in the book. This way, we can "compress" our moves by factor ~12, which will be invaluable due to 100k characters limit for code.
+Yavalath is player on hexagonal board, and luckily, hexagon has more symmetries than square. Hexagon has 6 symmetries and 6 rotations, so in average a state has 12 equivalent variations. We can exploit this fact in few ways. Firstly, naively speaking Yavalath has 61 starting moves, but thanks to symmetry deduplication, there are only 9 distinct moves. And for the few first moves, much deduplication will occur so we're gonna need to explore much less distinct moves for our opening book. For example, there are 328 unique states for 2 stones, instead of 9 x 60 = 540. Secondly, we can support averagily 12 variations if we save 1 state in the book. This way, we can "compress" our moves by factor ~12, which will be invaluable due to 100k characters limit for code.
+
+
+The updated pseudocode. It'll take more space but I'm generating book offline so I don't care much. Plus, it's easier to maintain book this way for me.
+```
+// ...
+    for (int i=0;i<gameStates.size();i++) {
+        State state = gameStates.get(i);
+        Action action = replies.get(i);
+        // add game state and add or update its action to the map
+        // and update action's wins and games accordingly
+        for (each non-repeating variation of state and action) {
+            State statePrim = rotateOrSymmetry(state);
+            Action actionPrim = rotateOrSymmetry(action);
+            // add game state prim and add or update its action prim to the map
+            // and update action prim's wins and games accordingly
+        }
+    }
+```
+
+## Book distillation
+
+We ran the algorithm for some time and computer played with itself few thousand games. We have some statistics about positions and best replies so far.
+
+
+
 
 This Java template lets you get started quickly with a simple one-page playground.
 
