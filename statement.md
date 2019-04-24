@@ -50,11 +50,11 @@ while (true) {
         }
         gameStates.add(state);
         if (bestAction != null && bestAction.winrate() > 0.5) {
-            game.makeMove(action);
+            game.makeMove(action.move);
             actions.add(action);
         } else {
             Action action = cpu.getBestMove();
-            game.makeMove(action);
+            game.makeMove(action.move);
             actions.add(action);
         }
     }
@@ -66,7 +66,7 @@ while (true) {
 
 ## Yavalath symmetries
 
-Yavalath is player on hexagonal board, and luckily, hexagon has more symmetries than square. Hexagon has 6 symmetries and 6 rotations, so in average a state has 12 equivalent variations. We can exploit this fact in few ways. Firstly, naively speaking Yavalath has 61 starting moves, but thanks to symmetry deduplication, there are only 9 distinct moves.
+Yavalath is player on hexagonal board, and luckily, hexagon has more symmetries than square. Hexagon has 6 symmetries and 6 rotations, so in average a state has 12 equivalent variations. We can exploit this fact in few ways. Firstly, naively speaking Yavalath has 61 starting moves, but thanks to symmetry deduplication, there are only 9 distinct moves. And for the few first moves, much deduplication will occur so we're gonna need to explore much less distinct moves for our opening book. Secondly, we can support averagily 12 variations if we save 1 state in the book. This way, we can "compress" our moves by factor ~12, which will be invaluable due to 100k characters limit for code.
 
 This Java template lets you get started quickly with a simple one-page playground.
 
