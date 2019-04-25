@@ -121,6 +121,8 @@ for (State state : states) {
         openings.put(state.toString(),bestAction.move);
     }
 }
+
+// now the openings contains opening book to use
 ```
 
 Probably it's gonna change as I improve myself and find better ways to do it.
@@ -147,5 +149,5 @@ It is tempting to see if using much more games would give yet better results, or
 
 # Conclusion
 
-Yavalath benefits from having stronger openings. I think this is due to many shallow but out-of-horizon trap states, which should be avoided or eploited for the opponent. Thanks to hexagonal shape of the board, there are many symmetries allowing to save space and reducing the time needed to explore the beginning of game. Thanks to atomatic generation, I can run my program overnight and wake up to stronger bot. It is some form of learning after all, but in the age of reinforcement learning and neural net, rather primitive one.
+Yavalath benefits from having stronger openings. I think this is due to many shallow but out-of-horizon trap states, which should be avoided or exploited for the opponent. Thanks to hexagonal shape of the board, there are many symmetries allowing to save space and reducing the time needed to explore the beginning of game. Thanks to atomatic generation, I can run my program overnight and wake up to stronger bot. It is some form of learning after all, but in the age of reinforcement learning and neural net, rather primitive one.
 
