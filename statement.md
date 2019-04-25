@@ -42,7 +42,7 @@ while (true) {
         State state = game.getState();
         Action bestAction = null;
         if (storedStates.containsKey(state)) {
-            if (Action action : storedStates.get(state)) {
+            for (Action action : storedStates.get(state)) {
                 if (bestAction == null || action.winrate() > bestAction.winrate()) {
                     bestAction = action;
                 }
@@ -62,11 +62,13 @@ while (true) {
     for (int i=0;i<gameStates.size();i++) {
         State state = gameStates.get(i);
         Action action = replies.get(i);
-        // add game state and add or update its action to the map
+        // add game state and add or update its action to the storedStates
         // and update action's wins and games accordingly
     }
 }
 ```
+
+I am using MCTS solver, so I will use meta MCTS solver as well. To the Action I added boolean terminal and whenever I know the Action has been solved, I set the terminal to true and wins to INFINITY or -INFINITY. Then next time a state is encountered, if winning Action has been found I use it or I avoid all losing Actions.
 
 ## Yavalath symmetries
 
@@ -79,45 +81,71 @@ The updated pseudocode. It'll take more space but I'm generating book offline so
     for (int i=0;i<gameStates.size();i++) {
         State state = gameStates.get(i);
         Action action = replies.get(i);
-        // add game state and add or update its action to the map
+        // add game state and add or update its action to the storedStates
         // and update action's wins and games accordingly
         for (each non-repeating variation of state and action) {
             State statePrim = rotateOrSymmetry(state);
             Action actionPrim = rotateOrSymmetry(action);
-            // add game state prim and add or update its action prim to the map
+            // add game state prim and add or update its action prim to the storedStates
             // and update action prim's wins and games accordingly
         }
     }
 ```
 
-## Book distillation
+## Final result
 
-We ran the algorithm for some time and computer played with itself few thousand games. We have some statistics about positions and best replies so far.
+We run above algorithm for some time, i.e. I ran overnight with 1s per move and played several thousand games. Now I have statistics of the positions and corresponding replies, what do to with them? Firstly, there is character limit on CG to 100k characters, so I can't use stored all the moves. Secondly, I want to avoid very bad moves to be added. Probably there are several methods to distill what I have so far into relevant openings book. Some ideas I took from paper "A Principled Method for Exploiting Opening Books (2010)", namely the lower confidence bound. With trials and errors, this is roughly what I use now:
 
+```
+Map<String, Move> openings;
+// ...
 
-
-
-This Java template lets you get started quickly with a simple one-page playground.
-
-```java runnable
-// { autofold
-public class Main {
-
-public static void main(String[] args) {
-// }
-
-String message = "Hello World!";
-System.out.println(message);
-
-//{ autofold
+Set<State> states = storedActions.keySet();
+for (State state : states) {
+    if (openings.containsKey(state.toString()) || /* openings contains any variation of the state, so deduplicate symmetries here */) {
+        continue;
+    }
+    Action bestAction = null;
+    float bestWinrateLCB = -1;
+    for (Action action : storedActions.get(state)) {
+        if (action.games < 10 && action.wins != INFINITY) { // 10 adjustable
+            continue;
+        }
+        float winrateLCB = action.winrate() - 2.0f / Math.sqrt(action.games); // 2.0 adjustable
+        if (bestAction == null || winrateLCB > bestWinrateLCB) {
+            bestAction = action;
+            bestWinrateLCB = winrateLCB
+        }
+    }
+    if (bestWinrateLCB > 0.2) { // 0.2 adjustable
+        openings.put(state.toString(),bestAction.move);
+    }
 }
-
-}
-//}
 ```
 
-# Advanced usage
+Probably it's gonna change as I improve myself and find better ways to do it.
 
-If you want a more complex example (external libraries, viewers...), use the [Advanced Java template](https://tech.io/select-repo/385)
+As for the actual bot, at the beginning of its turn, it first check the game's state and all of its variations (symmetries and rotations) if they have been stored in the map. If yes, use the reply, otherwise use the usual cpu.getBestMove(). I.e. there is a State S in the actual game, and we have it stored as double rotated by 60°, S''. So we have stored Action A'', thus we need to rotate it back twice into A. Now we play the Action A. Voila!
 
-### mmmmm
+
+# Experiments
+
+Here are some experiment results. I run my cpu vs cpu. I don't assume swap rule, the first ply (9 distinct moves) is played randomly, so I can get the idea which move to swap or which move to play so it won't be swapped.
+
+## Early attempts
+
+During my early attempts, I ran my algorithm for ~20000 games and gathered statistics. I limited my openings to ~1500 nodes due to poor way of storing them in the code (I had 1500 of map["state"]=move;map["state2"]=move2;...). My cpu with openings vs cpu w/o openings yielded 61:39 winrate. When I submitted new code, my bot went higher in rank, it was significantly stronger. That was encouranging. Against minimax bots the beginning was quite deterministic, because the bots were making the same moves. I could see for many occassions my bot "learned" triangle patterns which were strong. Unfortunately, some moves stored in the book were very bad. For example, after 2 moves from the book, it turned out my bot was in situation of sure loss, which was exploited by the minimax bot. I had to manually remove the move. The move was picked up in the first place, because it had good statistics of winning. So while meta-mcts made my bot stronger, it still contained very bad moves, probably due to its greedy nature, which was addressed in the meta-mcts paper.
+
+## Later attempts
+
+With time, my bot improved due to enhancements I provided into its code. I decided to generate new openings book from scratch. I added some random factor in choosing move, so even if move had 90% winrate, there was chance it wouldn't be chosen and bot would play by itself instead. This way it should be more exploratory. Also, after several thousand games, I decided to make 2 first plies move random, so it'd make book more shallow, but more exploratory. I ran this for longer time, for ~75k games. I also optimized the code, now I hardcode string into code and decode it into map in 1st turn. Now I have ~5500 nodes in the book. Cpu with openings vs cpu w/o openings gave 68:32 winrate, so better than last time. It also stayed longer in the book. When I submitted the code, my bot slightly improved. Interestingly, it stayed longer in the book against minimax bots than (as far as I presume) mcts bots. Still there was one move (as far as I know), which after leaving the book led to loss.
+
+## Future
+
+It is tempting to see if using much more games would give yet better results, or maybe solve some moves (AFAIK move in center is proven win). But for now I'll spend more time to improve the simple MCTS. Perhaps in the meantime I'll find better algorithm for opening moves generation or find a better way to verify the moves.
+
+
+# Conclusion
+
+Yavalath benefits from having stronger openings. I think this is due to many shallow but out-of-horizon trap states, which should be avoided or eploited for the opponent. Thanks to hexagonal shape of the board, there are many symmetries allowing to save space and reducing the time needed to explore the beginning of game. Thanks to atomatic generation, I can run my program overnight and wake up to stronger bot. It is some form of learning after all, but in the age of reinforcement learning and neural net, rather primitive one.
+
