@@ -158,7 +158,7 @@ With time, my bot improved due to enhancements I provided into its code. I decid
 
 ## Future
 
-It is tempting to see if using much more games would give yet better results, or maybe solve some moves (AFAIK move in center is proven win). But for now I'll spend more time to improve the simple MCTS. Perhaps in the meantime I'll find better algorithm for opening moves generation or find a better way to verify the moves.
+It is tempting to see if using much more games would give yet better results, or maybe solve some moves (AFAIK move in center is proven win). Or maybe using more time like 5 minutes per move would get me better book, "expert book". But for now I'll spend more time to improve the simple MCTS. Perhaps in the meantime I'll find better algorithm for opening moves generation or find a better way to verify the moves.
 
 
 # Conclusion
