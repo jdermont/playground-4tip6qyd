@@ -77,6 +77,14 @@ I am using MCTS solver, so I will use meta MCTS solver as well. To the Action I 
 
 Yavalath is played on hexagonal board. Luckily, hexagon has more symmetries than square. Hexagon has 6 symmetries and 6 rotations, so in average a state has 12 equivalent variations. We can exploit this fact in few ways. Firstly, naively speaking Yavalath has 61 starting moves, but thanks to symmetry deduplication, there are only 9 distinct moves. And for the few first moves, much deduplication will occur so we're gonna need to explore much less distinct moves for our opening book. For example, there are 328 unique states for 2 stones, instead of 9 x 60 = 540. Secondly, we can support averagily 12 variations if we save just 1 state in the book. This way, we can "compress" our moves by factor ~12, which will be invaluable due to 100k characters limit for code.
 
+![9 distinct moves](yava1.png)
+
+*9 distinct moves, 9 different colours*
+
+![2 symmetrical states](yava2.png)
+
+*these 2 states and replies are equivalent*
+
 The updated pseudocode. It'll take more space but I'm generating book offline so I don't care much. Plus, it's easier to maintain book this way for me.
 ```
 // ...
